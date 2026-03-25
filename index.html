@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>가위 바위 보</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #faf7f2;
+  --bg2: #f0ebe3;
+  --text: #1a1a2e;
+  --text2: #555;
+  --card: #ffffff;
+  --card-shadow: rgba(0,0,0,0.08);
+  --accent: #e94560;
+  --accent2: #0f3460;
+  --accent3: #16213e;
+  --border: #e0dcd5;
+  --win: #2ecc71;
+  --lose: #e74c3c;
+  --draw: #f39c12;
+  --graph-line: #e94560;
+  --graph-bg: rgba(233,69,96,0.08);
+  --modal-bg: rgba(0,0,0,0.5);
+  --btn-hover: #d63851;
+}
+
+[data-theme="dark"] {
+  --bg: #0f0f1a;
+  --bg2: #1a1a2e;
+  --text: #eee;
+  --text2: #aaa;
+  --card: #16213e;
+  --card-shadow: rgba(0,0,0,0.3);
+  --accent: #e94560;
+  --accent2: #4fc3f7;
+  --accent3: #81d4fa;
+  --border: #2a2a4a;
+  --win: #2ecc71;
+  --lose: #e74c3c;
+  --draw: #f39c12;
+  --graph-line: #4fc3f7;
+  --graph-bg: rgba(79,195,247,0.1);
+  --modal-bg: rgba(0,0,0,0.7);
+  --btn-hover: #d63851;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: background 0.4s, color 0.4s;
+  overflow-x: hidden;
+}
+
+.top-bar {
+  position: fixed; top: 0; right: 0; left: 0;
+  display: flex; justify-content: flex-end; align-items: center;
+  padding: 16px 24px; gap: 10px; z-index: 100;
+}
+
+.icon-btn {
+  width: 44px; height: 44px;
+  border-radius: 12px; border: 2px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px var(--card-shadow);
+}
+.icon-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px var(--card-shadow); }
+
+.container {
+  max-width: 640px; margin: 0 auto;
+  padding: 80px 20px 40px;
+  display: flex; flex-direction: column; align-items: center;
+}
+
+h1 {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 2.8rem;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: var(--text2); font-size: 0.95rem; margin-bottom: 32px;
+  font-weight: 600;
+}
+
+/* Scoreboard */
+.scoreboard {
+  display: flex; align-items: center; gap: 24px;
+  background: var(--card);
+  border-radius: 20px; padding: 20px 36px;
+  box-shadow: 0 4px 24px var(--card-shadow);
+  margin-bottom: 36px;
+  border: 2px solid var(--border);
+  transition: all 0.3s;
+}
+
+.score-side {
+  text-align: center; min-width: 80px;
+}
+.score-label { font-size: 0.8rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.score-num {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 3rem; line-height: 1;
+  transition: transform 0.3s, color 0.3s;
+}
+.score-num.pop { animation: scorePop 0.4s ease; }
+@keyframes scorePop { 0%{transform:scale(1)} 50%{transform:scale(1.4)} 100%{transform:scale(1)} }
+
+.score-divider {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 2rem; color: var(--border);
+}
+
+.round-info {
+  text-align: center; margin-bottom: 28px;
+  font-weight: 700; font-size: 0.9rem; color: var(--text2);
+}
+.round-info span { color: var(--accent); }
+
+/* Arena */
+.arena {
+  display: flex; align-items: center; justify-content: center;
+  gap: 32px; margin-bottom: 36px; width: 100%;
+  min-height: 140px;
+}
+
+.fighter {
+  width: 120px; height: 120px;
+  background: var(--card);
+  border-radius: 24px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 3.6rem;
+  border: 3px solid var(--border);
+  box-shadow: 0 4px 20px var(--card-shadow);
+  transition: all 0.3s;
+  position: relative;
+}
+.fighter.win { border-color: var(--win); box-shadow: 0 0 24px rgba(46,204,113,0.3); }
+.fighter.lose { border-color: var(--lose); box-shadow: 0 0 24px rgba(231,76,60,0.2); }
+.fighter.draw { border-color: var(--draw); }
+.fighter.shake { animation: shake 0.5s ease; }
+@keyframes shake {
+  0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
+}
+
+.vs-text {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 1.6rem; color: var(--accent); opacity: 0.8;
+}
+
+.result-text {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 1.5rem; margin-bottom: 28px;
+  min-height: 40px;
+  text-align: center;
+  transition: opacity 0.3s;
+}
+.result-text.win-text { color: var(--win); }
+.result-text.lose-text { color: var(--lose); }
+.result-text.draw-text { color: var(--draw); }
+
+/* Choices */
+.choices {
+  display: flex; gap: 16px; margin-bottom: 24px;
+}
+
+.choice-btn {
+  width: 100px; height: 100px;
+  border-radius: 20px;
+  border: 3px solid var(--border);
+  background: var(--card);
+  cursor: pointer;
+  font-size: 3rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 3px 12px var(--card-shadow);
+  position: relative;
+  overflow: hidden;
+}
+.choice-btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: var(--accent); opacity: 0;
+  border-radius: 17px; transition: opacity 0.2s;
+}
+.choice-btn:hover { transform: translateY(-6px) scale(1.05); border-color: var(--accent); }
+.choice-btn:hover::after { opacity: 0.06; }
+.choice-btn:active { transform: translateY(-2px) scale(0.98); }
+.choice-btn .label {
+  position: absolute; bottom: 6px; font-size: 0.65rem;
+  font-weight: 700; color: var(--text2); letter-spacing: 1px;
+}
+
+/* Graph */
+.graph-area {
+  width: 100%; background: var(--card);
+  border-radius: 20px; padding: 24px;
+  border: 2px solid var(--border);
+  box-shadow: 0 4px 24px var(--card-shadow);
+  margin-top: 12px;
+}
+.graph-title {
+  font-weight: 900; font-size: 0.85rem; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;
+}
+.graph-canvas-wrap {
+  width: 100%; height: 180px; position: relative;
+}
+canvas#winRateChart { width: 100% !important; height: 100% !important; }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: var(--modal-bg);
+  display: none; align-items: center; justify-content: center;
+  z-index: 200;
+  animation: fadeIn 0.2s;
+}
+.modal-overlay.active { display: flex; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+.modal {
+  background: var(--card);
+  border-radius: 24px;
+  padding: 32px;
+  max-width: 520px; width: 90%;
+  max-height: 80vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  border: 2px solid var(--border);
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+.modal h2 {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 1.5rem; margin-bottom: 20px;
+}
+.modal table {
+  width: 100%; border-collapse: collapse;
+}
+.modal th, .modal td {
+  padding: 10px 12px; text-align: center;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.88rem;
+}
+.modal th {
+  font-weight: 800; color: var(--accent);
+  font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px;
+}
+.modal-close {
+  margin-top: 20px; width: 100%;
+  padding: 12px; border-radius: 12px;
+  border: none; background: var(--accent); color: #fff;
+  font-weight: 700; font-size: 0.95rem; cursor: pointer;
+  transition: background 0.2s;
+}
+.modal-close:hover { background: var(--btn-hover); }
+
+/* Game Over Overlay */
+.game-over-overlay {
+  position: fixed; inset: 0;
+  display: none; align-items: center; justify-content: center;
+  z-index: 300; background: var(--modal-bg);
+}
+.game-over-overlay.active { display: flex; }
+
+.game-over-card {
+  background: var(--card);
+  border-radius: 28px; padding: 48px 40px;
+  text-align: center;
+  box-shadow: 0 20px 80px rgba(0,0,0,0.4);
+  border: 3px solid var(--border);
+  animation: slideUp 0.4s ease;
+  position: relative; overflow: hidden;
+  max-width: 420px; width: 90%;
+}
+.game-over-card h2 {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 2.2rem; margin-bottom: 12px;
+}
+.game-over-card p { color: var(--text2); font-weight: 600; margin-bottom: 28px; }
+
+.play-again-btn {
+  padding: 14px 40px; border-radius: 14px;
+  border: none; background: var(--accent); color: #fff;
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 1.2rem; cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px rgba(233,69,96,0.3);
+}
+.play-again-btn:hover { transform: scale(1.05); box-shadow: 0 6px 24px rgba(233,69,96,0.4); }
+
+/* Confetti */
+.confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 350; overflow: hidden; }
+.confetti {
+  position: absolute; width: 10px; height: 10px;
+  top: -20px;
+  animation: confettiFall linear forwards;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg) scale(0.5); opacity: 0; }
+}
+
+/* Sad rain */
+.rain-container { position: fixed; inset: 0; pointer-events: none; z-index: 350; overflow: hidden; }
+.raindrop {
+  position: absolute; top: -30px;
+  font-size: 1.2rem; opacity: 0.6;
+  animation: rainFall linear forwards;
+}
+@keyframes rainFall {
+  0% { transform: translateY(0); opacity: 0.7; }
+  100% { transform: translateY(110vh); opacity: 0; }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  h1 { font-size: 2rem; }
+  .scoreboard { padding: 16px 20px; gap: 16px; }
+  .score-num { font-size: 2.2rem; }
+  .choice-btn { width: 80px; height: 80px; font-size: 2.4rem; }
+  .fighter { width: 90px; height: 90px; font-size: 2.8rem; }
+  .arena { gap: 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <button class="icon-btn" id="statsBtn" title="전적 보기">📊</button>
+  <button class="icon-btn" id="darkBtn" title="다크 모드">🌙</button>
+</div>
+
+<div class="container">
+  <h1>가위 바위 보</h1>
+  <p class="subtitle">3판을 먼저 이기면 승리!</p>
+
+  <div class="scoreboard">
+    <div class="score-side">
+      <div class="score-label">나</div>
+      <div class="score-num" id="myScore">0</div>
+    </div>
+    <div class="score-divider">:</div>
+    <div class="score-side">
+      <div class="score-label">컴퓨터</div>
+      <div class="score-num" id="cpuScore">0</div>
+    </div>
+  </div>
+
+  <div class="round-info">라운드 <span id="roundNum">1</span></div>
+
+  <div class="arena">
+    <div class="fighter" id="myFighter">❓</div>
+    <div class="vs-text">VS</div>
+    <div class="fighter" id="cpuFighter">❓</div>
+  </div>
+
+  <div class="result-text" id="resultText"></div>
+
+  <div class="choices" id="choicesArea">
+    <button class="choice-btn" data-choice="scissors" title="가위">✌️<span class="label">가위</span></button>
+    <button class="choice-btn" data-choice="rock" title="바위">✊<span class="label">바위</span></button>
+    <button class="choice-btn" data-choice="paper" title="보">🖐️<span class="label">보</span></button>
+  </div>
+
+  <div class="graph-area">
+    <div class="graph-title">📈 승률 추이</div>
+    <div class="graph-canvas-wrap">
+      <canvas id="winRateChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Modal -->
+<div class="modal-overlay" id="statsModal">
+  <div class="modal">
+    <h2>📊 전적 기록</h2>
+    <table>
+      <thead>
+        <tr><th>#</th><th>나</th><th>컴퓨터</th><th>결과</th></tr>
+      </thead>
+      <tbody id="statsBody"></tbody>
+    </table>
+    <div id="statsSummary" style="margin-top:16px;text-align:center;font-weight:700;color:var(--text2);font-size:0.9rem;"></div>
+    <button class="modal-close" id="closeStats">닫기</button>
+  </div>
+</div>
+
+<!-- Game Over -->
+<div class="game-over-overlay" id="gameOverOverlay">
+  <div class="game-over-card">
+    <h2 id="gameOverTitle"></h2>
+    <p id="gameOverMsg"></p>
+    <button class="play-again-btn" id="playAgainBtn">🔄 다시 하기</button>
+  </div>
+</div>
+
+<div class="confetti-container" id="confettiContainer"></div>
+<div class="rain-container" id="rainContainer"></div>
+
+<script>
+const EMOJI = { scissors: '✌️', rock: '✊', paper: '🖐️' };
+const NAMES = { scissors: '가위', rock: '바위', paper: '보' };
+const WIN_MAP = { scissors: 'paper', rock: 'scissors', paper: 'rock' };
+
+let myWins = 0, cpuWins = 0, round = 1;
+let history = [];
+let winRates = []; // cumulative win rate per round
+let playing = true;
+
+const $ = id => document.getElementById(id);
+
+// Dark mode
+let dark = localStorage.getItem('rps-dark') === 'true';
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : '');
+  $('darkBtn').textContent = dark ? '☀️' : '🌙';
+}
+applyTheme();
+$('darkBtn').addEventListener('click', () => { dark = !dark; localStorage.setItem('rps-dark', dark); applyTheme(); drawGraph(); });
+
+// Stats modal
+$('statsBtn').addEventListener('click', () => { updateStatsTable(); $('statsModal').classList.add('active'); });
+$('closeStats').addEventListener('click', () => $('statsModal').classList.remove('active'));
+$('statsModal').addEventListener('click', e => { if (e.target === $('statsModal')) $('statsModal').classList.remove('active'); });
+
+function updateStatsTable() {
+  const tbody = $('statsBody');
+  tbody.innerHTML = '';
+  history.forEach((h, i) => {
+    const tr = document.createElement('tr');
+    const rColor = h.result === '승리' ? 'var(--win)' : h.result === '패배' ? 'var(--lose)' : 'var(--draw)';
+    tr.innerHTML = `<td>${i+1}</td><td>${h.my}</td><td>${h.cpu}</td><td style="color:${rColor};font-weight:800">${h.result}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const totalW = history.filter(h => h.result === '승리').length;
+  const totalL = history.filter(h => h.result === '패배').length;
+  const totalD = history.filter(h => h.result === '무승부').length;
+  const total = history.length;
+  const wr = total > 0 ? ((totalW / total) * 100).toFixed(1) : 0;
+  $('statsSummary').innerHTML = `총 ${total}전 <span style="color:var(--win)">${totalW}승</span> <span style="color:var(--lose)">${totalL}패</span> <span style="color:var(--draw)">${totalD}무</span> &nbsp;|&nbsp; 승률 <span style="color:var(--accent)">${wr}%</span>`;
+}
+
+// Choices
+document.querySelectorAll('.choice-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (!playing) return;
+    play(btn.dataset.choice);
+  });
+});
+
+function cpuChoice() {
+  const arr = ['scissors', 'rock', 'paper'];
+  return arr[Math.floor(Math.random() * 3)];
+}
+
+function getResult(my, cpu) {
+  if (my === cpu) return 'draw';
+  return WIN_MAP[my] === cpu ? 'win' : 'lose';
+}
+
+function play(myC) {
+  const cpuC = cpuChoice();
+  const result = getResult(myC, cpuC);
+
+  // Show fighters
+  $('myFighter').textContent = EMOJI[myC];
+  $('cpuFighter').textContent = EMOJI[cpuC];
+
+  // Shake animation
+  $('myFighter').classList.remove('shake','win','lose','draw');
+  $('cpuFighter').classList.remove('shake','win','lose','draw');
+  void $('myFighter').offsetWidth;
+  $('myFighter').classList.add('shake');
+  $('cpuFighter').classList.add('shake');
+
+  setTimeout(() => {
+    if (result === 'win') {
+      $('myFighter').classList.add('win');
+      $('cpuFighter').classList.add('lose');
+    } else if (result === 'lose') {
+      $('myFighter').classList.add('lose');
+      $('cpuFighter').classList.add('win');
+    } else {
+      $('myFighter').classList.add('draw');
+      $('cpuFighter').classList.add('draw');
+    }
+  }, 300);
+
+  // Result text
+  const rt = $('resultText');
+  rt.className = 'result-text';
+  if (result === 'win') {
+    myWins++;
+    rt.textContent = `${NAMES[myC]}가 ${NAMES[cpuC]}를 이겼어요! 🎉`;
+    rt.classList.add('win-text');
+    popScore('myScore');
+  } else if (result === 'lose') {
+    cpuWins++;
+    rt.textContent = `${NAMES[cpuC]}가 ${NAMES[myC]}를 이겼어요... 😢`;
+    rt.classList.add('lose-text');
+    popScore('cpuScore');
+  } else {
+    rt.textContent = `둘 다 ${NAMES[myC]}! 비겼어요 🤝`;
+    rt.classList.add('draw-text');
+  }
+
+  $('myScore').textContent = myWins;
+  $('cpuScore').textContent = cpuWins;
+
+  // History
+  const resultK = result === 'win' ? '승리' : result === 'lose' ? '패배' : '무승부';
+  history.push({ my: NAMES[myC], cpu: NAMES[cpuC], result: resultK });
+
+  // Win rate
+  const totalWins = history.filter(h => h.result === '승리').length;
+  winRates.push(((totalWins / history.length) * 100));
+  drawGraph();
+
+  round++;
+  $('roundNum').textContent = round;
+
+  // Check game over
+  if (myWins >= 3) {
+    playing = false;
+    setTimeout(() => showGameOver(true), 600);
+  } else if (cpuWins >= 3) {
+    playing = false;
+    setTimeout(() => showGameOver(false), 600);
+  }
+}
+
+function popScore(id) {
+  const el = $(id);
+  el.classList.remove('pop');
+  void el.offsetWidth;
+  el.classList.add('pop');
+}
+
+function showGameOver(won) {
+  $('gameOverOverlay').classList.add('active');
+  if (won) {
+    $('gameOverTitle').textContent = '🏆 축하합니다! 🏆';
+    $('gameOverTitle').style.color = 'var(--win)';
+    $('gameOverMsg').textContent = `${myWins} : ${cpuWins} 으로 승리! 대단해요!`;
+    spawnConfetti();
+  } else {
+    $('gameOverTitle').textContent = '😢 아쉬워요...';
+    $('gameOverTitle').style.color = 'var(--lose)';
+    $('gameOverMsg').textContent = `${myWins} : ${cpuWins} 으로 패배... 다음엔 꼭 이겨봐요! 💪`;
+    spawnRain();
+  }
+}
+
+$('playAgainBtn').addEventListener('click', () => {
+  myWins = 0; cpuWins = 0; round = 1; playing = true;
+  $('myScore').textContent = '0';
+  $('cpuScore').textContent = '0';
+  $('roundNum').textContent = '1';
+  $('myFighter').textContent = '❓';
+  $('cpuFighter').textContent = '❓';
+  $('myFighter').className = 'fighter';
+  $('cpuFighter').className = 'fighter';
+  $('resultText').textContent = '';
+  $('resultText').className = 'result-text';
+  $('gameOverOverlay').classList.remove('active');
+  $('confettiContainer').innerHTML = '';
+  $('rainContainer').innerHTML = '';
+});
+
+// Confetti
+function spawnConfetti() {
+  const container = $('confettiContainer');
+  container.innerHTML = '';
+  const colors = ['#e94560','#0f3460','#f39c12','#2ecc71','#9b59b6','#4fc3f7','#ff6b81','#ffd93d'];
+  const shapes = ['square','circle','strip'];
+  for (let i = 0; i < 120; i++) {
+    const el = document.createElement('div');
+    el.classList.add('confetti');
+    const shape = shapes[Math.floor(Math.random()*3)];
+    const color = colors[Math.floor(Math.random()*colors.length)];
+    const left = Math.random() * 100;
+    const dur = 1.5 + Math.random() * 2.5;
+    const delay = Math.random() * 1.5;
+    const size = 6 + Math.random() * 10;
+
+    el.style.left = left + '%';
+    el.style.background = color;
+    el.style.animationDuration = dur + 's';
+    el.style.animationDelay = delay + 's';
+    el.style.width = shape === 'strip' ? size*0.4+'px' : size+'px';
+    el.style.height = shape === 'strip' ? size*2+'px' : size+'px';
+    el.style.borderRadius = shape === 'circle' ? '50%' : shape === 'strip' ? '2px' : '2px';
+
+    container.appendChild(el);
+  }
+}
+
+function spawnRain() {
+  const container = $('rainContainer');
+  container.innerHTML = '';
+  const emojis = ['💧','🌧️','😢','💦'];
+  for (let i = 0; i < 40; i++) {
+    const el = document.createElement('div');
+    el.classList.add('raindrop');
+    el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    el.style.left = Math.random() * 100 + '%';
+    el.style.animationDuration = (2 + Math.random()*3) + 's';
+    el.style.animationDelay = Math.random()*2 + 's';
+    el.style.fontSize = (0.8 + Math.random()*0.8) + 'rem';
+    container.appendChild(el);
+  }
+}
+
+// ── Canvas Graph ──
+function drawGraph() {
+  const canvas = $('winRateChart');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { top: 20, right: 20, bottom: 30, left: 44 };
+  const gW = W - pad.left - pad.right;
+  const gH = H - pad.top - pad.bottom;
+
+  const style = getComputedStyle(document.documentElement);
+  const lineColor = style.getPropertyValue('--graph-line').trim();
+  const textColor = style.getPropertyValue('--text2').trim();
+  const borderColor = style.getPropertyValue('--border').trim();
+  const bgFill = style.getPropertyValue('--graph-bg').trim();
+
+  // Grid
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth = 0.5;
+  for (let p = 0; p <= 100; p += 25) {
+    const y = pad.top + gH - (p / 100) * gH;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + gW, y); ctx.stroke();
+    ctx.fillStyle = textColor; ctx.font = '11px Noto Sans KR'; ctx.textAlign = 'right';
+    ctx.fillText(p + '%', pad.left - 8, y + 4);
+  }
+
+  if (winRates.length === 0) {
+    ctx.fillStyle = textColor; ctx.font = '13px Noto Sans KR'; ctx.textAlign = 'center';
+    ctx.fillText('게임을 시작하면 그래프가 나타납니다', W / 2, H / 2);
+    return;
+  }
+
+  const n = winRates.length;
+  const xStep = n > 1 ? gW / (n - 1) : 0;
+
+  // Area fill
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top + gH);
+  winRates.forEach((v, i) => {
+    const x = pad.left + i * xStep;
+    const y = pad.top + gH - (v / 100) * gH;
+    ctx.lineTo(x, y);
+  });
+  ctx.lineTo(pad.left + (n - 1) * xStep, pad.top + gH);
+  ctx.closePath();
+  ctx.fillStyle = bgFill;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  winRates.forEach((v, i) => {
+    const x = pad.left + i * xStep;
+    const y = pad.top + gH - (v / 100) * gH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Dots
+  winRates.forEach((v, i) => {
+    const x = pad.left + i * xStep;
+    const y = pad.top + gH - (v / 100) * gH;
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = lineColor;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, y, 2, 0, Math.PI * 2);
+    ctx.fillStyle = dark ? '#0f0f1a' : '#fff';
+    ctx.fill();
+  });
+
+  // X labels
+  ctx.fillStyle = textColor; ctx.font = '10px Noto Sans KR'; ctx.textAlign = 'center';
+  winRates.forEach((v, i) => {
+    if (n <= 20 || i % Math.ceil(n/15) === 0 || i === n-1) {
+      const x = pad.left + i * xStep;
+      ctx.fillText(i + 1, x, pad.top + gH + 18);
+    }
+  });
+
+  // Latest value label
+  if (n > 0) {
+    const lastX = pad.left + (n-1)*xStep;
+    const lastY = pad.top + gH - (winRates[n-1]/100)*gH;
+    ctx.fillStyle = lineColor; ctx.font = 'bold 12px Noto Sans KR'; ctx.textAlign = 'center';
+    ctx.fillText(winRates[n-1].toFixed(1)+'%', lastX, lastY - 12);
+  }
+}
+
+// Initial draw
+drawGraph();
+window.addEventListener('resize', drawGraph);
+</script>
+
+</body>
+</html>
